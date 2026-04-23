@@ -37,3 +37,4 @@ frontend/.vite/
 docs/
 .cursorrules
 *.md
+!README.md

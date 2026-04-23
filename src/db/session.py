@@ -44,6 +44,8 @@ _ADDITIVE_COLUMNS: dict[str, str] = {
     "tech_stack": "TEXT NOT NULL DEFAULT '[]'",
     "opportunity_score": "REAL",
     "outreach_draft": "TEXT",
+    "outreach_sent_at": "DATETIME",
+    "outreach_last_error": "TEXT",
     "last_scanned_at": "DATETIME",
 }
 

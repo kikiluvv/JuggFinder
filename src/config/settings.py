@@ -28,6 +28,18 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.0-flash"
     groq_model: str = "llama-3.3-70b-versatile"
 
+    # --- Outreach email sending (Phase 16) ---
+    # Safety gate: sending is disabled unless explicitly enabled.
+    outreach_send_enabled: bool = False
+    outreach_sender_name: str = "Boise Web Studio"
+    outreach_sender_email: str = ""
+    # SMTP settings (example: smtp.gmail.com + app password)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @field_validator("gemini_api_key", "groq_api_key")
@@ -60,5 +72,23 @@ class Settings(BaseSettings):
             raise ValueError(f"SCRAPE_MAX_RESULTS must be 1–500, got: {v}")
         return v
 
+    @field_validator("smtp_port")
+    @classmethod
+    def validate_smtp_port(cls, v: int) -> int:
+        if v < 1 or v > 65535:
+            raise ValueError(f"SMTP_PORT must be 1-65535, got: {v}")
+        return v
+
 
 settings = Settings()
+
+
+def reload_settings() -> Settings:
+    """
+    Reload settings from the current environment / .env file and mutate the
+    global `settings` object in-place so existing imports see updated values.
+    """
+    fresh = Settings()
+    for field in fresh.model_fields:
+        setattr(settings, field, getattr(fresh, field))
+    return settings

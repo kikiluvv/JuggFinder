@@ -3,6 +3,7 @@ import FilterBar from '@/components/FilterBar'
 import LeadDetailSheet from '@/components/LeadDetailSheet'
 import LeadTable from '@/components/LeadTable'
 import ScrapeModal from '@/components/ScrapeModal'
+import SettingsDialog from '@/components/SettingsDialog'
 import StatsBar from '@/components/StatsBar'
 import TopNav from '@/components/TopNav'
 import { useFilters } from '@/hooks/useFilters'
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const { filters, onChange, onReset } = useFilters()
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null)
   const [scrapeModalOpen, setScrapeModalOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const prevRunning = useRef(false)
 
   const { data: scrapeStatus } = useQuery({
@@ -32,8 +34,11 @@ export default function Dashboard() {
   }, [scrapeStatus?.running, queryClient])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TopNav onScrapeClick={() => setScrapeModalOpen(true)} />
+    <div className="min-h-screen bg-background">
+      <TopNav
+        onScrapeClick={() => setScrapeModalOpen(true)}
+        onSettingsClick={() => setSettingsOpen(true)}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         <StatsBar />
@@ -47,6 +52,7 @@ export default function Dashboard() {
       <LeadDetailSheet leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
 
       <ScrapeModal open={scrapeModalOpen} onClose={() => setScrapeModalOpen(false)} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

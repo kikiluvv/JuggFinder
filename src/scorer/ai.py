@@ -101,6 +101,13 @@ _gemini_client: genai.Client | None = None
 _groq_client: Groq | None = None
 
 
+def reset_clients() -> None:
+    """Drop cached clients so updated API keys/models take effect."""
+    global _gemini_client, _groq_client
+    _gemini_client = None
+    _groq_client = None
+
+
 def _get_gemini() -> genai.Client:
     global _gemini_client
     if _gemini_client is None:

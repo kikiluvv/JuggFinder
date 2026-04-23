@@ -38,6 +38,8 @@ class LeadDetail(LeadSummary):
     ai_issues: list[str]
     ai_summary: str | None
     outreach_draft: str | None
+    outreach_sent_at: datetime | None
+    outreach_last_error: str | None
     notes: str | None
     updated_at: datetime
     last_scanned_at: datetime | None
@@ -104,3 +106,101 @@ class CategoriesResponse(BaseModel):
 class OutreachDraftResponse(BaseModel):
     lead_id: int
     draft: str
+
+
+class OutreachSendRequest(BaseModel):
+    subject: str | None = None
+    body: str | None = None
+
+
+class OutreachSendResponse(BaseModel):
+    lead_id: int
+    to_email: str
+    subject: str
+    sent_at: datetime
+
+
+class SettingsResponse(BaseModel):
+    # Keys are never returned (only "is set" flags)
+    gemini_api_key_set: bool
+    groq_api_key_set: bool
+
+    gemini_model: str
+    groq_model: str
+
+    scrape_schedule_time: str
+    scrape_location: str
+    scrape_max_results: int
+    scrape_headless: bool
+    scrape_user_agent: str
+
+    outreach_send_enabled: bool
+    outreach_sender_name: str
+    outreach_sender_email: str
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_use_tls: bool
+    smtp_password_set: bool
+
+
+class SettingsUpdateRequest(BaseModel):
+    # Optional: only provided fields are updated.
+    gemini_api_key: str | None = None
+    groq_api_key: str | None = None
+
+    gemini_model: str | None = None
+    groq_model: str | None = None
+
+    scrape_schedule_time: str | None = None
+    scrape_location: str | None = None
+    scrape_max_results: int | None = None
+    scrape_headless: bool | None = None
+    scrape_user_agent: str | None = None
+
+    outreach_send_enabled: bool | None = None
+    outreach_sender_name: str | None = None
+    outreach_sender_email: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool | None = None
+
+
+class OutreachPolicyResponse(BaseModel):
+    outreach_enabled: bool
+    outreach_daily_send_cap: int
+    outreach_send_window_start: str
+    outreach_send_window_end: str
+    outreach_send_timezone: str
+    outreach_enforce_window: bool
+    outreach_enforce_daily_cap: bool
+    outreach_enforce_suppression: bool
+    outreach_allowed_statuses: list[str]
+
+
+class OutreachPolicyUpdateRequest(BaseModel):
+    outreach_enabled: bool | None = None
+    outreach_daily_send_cap: int | None = None
+    outreach_send_window_start: str | None = None
+    outreach_send_window_end: str | None = None
+    outreach_send_timezone: str | None = None
+    outreach_enforce_window: bool | None = None
+    outreach_enforce_daily_cap: bool | None = None
+    outreach_enforce_suppression: bool | None = None
+    outreach_allowed_statuses: list[str] | None = None
+
+
+class SuppressionItem(BaseModel):
+    id: int
+    email: str
+    reason: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SuppressionAddRequest(BaseModel):
+    email: str
+    reason: str | None = None

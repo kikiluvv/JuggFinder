@@ -36,4 +36,7 @@ frontend/.vite/
 .cursor/
 docs/
 .cursorrules
+# Markdown: only the repo-root README is tracked; keep dev notes local
 *.md
+!/README.md
+/DEV-README.md

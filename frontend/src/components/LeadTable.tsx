@@ -97,7 +97,7 @@ const columns = [
           className="flex items-center gap-1 text-xs text-indigo-600 hover:underline"
         >
           {new URL(url.startsWith('http') ? url : `https://${url}`).hostname}
-          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+          <ExternalLink className="h-3 w-3 shrink-0" />
         </a>
       )
     },
@@ -170,14 +170,14 @@ export default function LeadTable({ filters, onRowClick }: LeadTableProps) {
   })
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       {isFetching && (
         <div className="h-0.5 bg-indigo-400 animate-pulse" />
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+        <table className="w-full min-w-[1100px] text-sm">
+          <thead className="bg-muted text-muted-foreground text-xs uppercase tracking-wide">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => (
@@ -203,10 +203,10 @@ export default function LeadTable({ filters, onRowClick }: LeadTableProps) {
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-16 text-gray-400">
+                <td colSpan={columns.length} className="text-center py-16 text-muted-foreground">
                   No leads found. Try adjusting filters or start a scrape.
                 </td>
               </tr>
@@ -234,7 +234,7 @@ export default function LeadTable({ filters, onRowClick }: LeadTableProps) {
 
       {/* Pagination */}
       {data && data.pages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border text-sm text-muted-foreground">
           <span>
             Page {data.page} of {data.pages} — {data.total} leads
           </span>
@@ -242,14 +242,14 @@ export default function LeadTable({ filters, onRowClick }: LeadTableProps) {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+              className="px-3 py-1.5 rounded-md border border-border hover:bg-muted disabled:opacity-40"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
               disabled={page === data.pages}
-              className="px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+              className="px-3 py-1.5 rounded-md border border-border hover:bg-muted disabled:opacity-40"
             >
               Next
             </button>

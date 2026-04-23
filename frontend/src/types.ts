@@ -31,6 +31,8 @@ export interface LeadDetail extends LeadSummary {
   ai_issues: string[]
   ai_summary: string | null
   outreach_draft: string | null
+  outreach_sent_at: string | null
+  outreach_last_error: string | null
   notes: string | null
   updated_at: string
   last_scanned_at: string | null
@@ -80,4 +82,11 @@ export interface ScrapeStatus {
 export interface OutreachDraftResponse {
   lead_id: number
   draft: string
+}
+
+export interface OutreachSendResponse {
+  lead_id: number
+  to_email: string
+  subject: string
+  sent_at: string
 }

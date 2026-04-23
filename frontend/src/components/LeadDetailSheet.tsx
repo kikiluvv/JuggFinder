@@ -1,4 +1,4 @@
-import { draftOutreach, fetchLead, rescanLead, updateLead } from '@/api/leads'
+import { draftOutreach, fetchLead, rescanLead, sendOutreach, updateLead } from '@/api/leads'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,6 +23,7 @@ import {
   MapPin,
   Phone,
   RefreshCw,
+  Send,
   Sparkles,
   Star,
 } from 'lucide-react'
@@ -57,10 +58,12 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
   const queryClient = useQueryClient()
   const [notes, setNotes] = useState('')
   const [draft, setDraft] = useState('')
+  const [subject, setSubject] = useState('')
   const [savedIndicator, setSavedIndicator] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const currentSubjectLeadRef = useRef<number | null>(null)
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ['lead', leadId],
@@ -72,6 +75,10 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
     if (lead) {
       setNotes(lead.notes ?? '')
       setDraft(lead.outreach_draft ?? '')
+      if (currentSubjectLeadRef.current !== lead.id) {
+        setSubject(`Quick website idea for ${lead.name}`)
+        currentSubjectLeadRef.current = lead.id
+      }
     }
   }, [lead])
 
@@ -101,6 +108,16 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
     onSuccess: ({ draft: text }) => {
       setDraft(text)
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
+    },
+  })
+
+  const sendMutation = useMutation({
+    mutationFn: () => sendOutreach(lead!.id, { subject, body: draft }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      setSavedIndicator(true)
+      setTimeout(() => setSavedIndicator(false), 2000)
     },
   })
 
@@ -138,16 +155,16 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
 
   return (
     <Sheet open={!!leadId} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl overflow-y-auto p-4 sm:p-6">
         {isLoading || !lead ? (
-          <div className="flex items-center justify-center h-full text-gray-400">Loading…</div>
+          <div className="flex items-center justify-center h-full text-muted-foreground">Loading…</div>
         ) : (
           <div className="flex flex-col gap-5 pb-6">
-            <SheetHeader>
+            <SheetHeader className="p-0">
               <SheetTitle className="text-xl">{lead.name}</SheetTitle>
-              <div className="flex items-center gap-3 flex-wrap text-sm text-gray-500">
+              <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
                 {lead.category && (
-                  <span className="capitalize bg-gray-100 px-2 py-0.5 rounded text-xs">
+                  <span className="capitalize bg-muted px-2 py-0.5 rounded text-xs">
                     {lead.category}
                   </span>
                 )}
@@ -156,7 +173,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                     <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                     {lead.rating.toFixed(1)}
                     {lead.review_count != null && (
-                      <span className="text-gray-400 ml-0.5">({lead.review_count})</span>
+                      <span className="text-muted-foreground ml-0.5">({lead.review_count})</span>
                     )}
                   </span>
                 )}
@@ -164,7 +181,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                   Score {lead.lead_score}
                 </Badge>
                 {lead.opportunity_score != null && (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     Opp {lead.opportunity_score.toFixed(0)}
                   </span>
                 )}
@@ -188,7 +205,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                     rel="noopener noreferrer"
                     className="flex items-start gap-2 text-sm text-indigo-600 hover:underline"
                   >
-                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
                     {lead.address}
                   </a>
                   <CopyButton
@@ -204,7 +221,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                     href={`tel:${lead.phone}`}
                     className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                   >
-                    <Phone className="h-4 w-4 flex-shrink-0" />
+                    <Phone className="h-4 w-4 shrink-0" />
                     {lead.phone}
                   </a>
                   <CopyButton
@@ -220,7 +237,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                     href={`mailto:${lead.email}`}
                     className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                   >
-                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <Mail className="h-4 w-4 shrink-0" />
                     {lead.email}
                   </a>
                   <CopyButton
@@ -237,30 +254,30 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-indigo-600 hover:underline break-all"
                 >
-                  <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                  <ExternalLink className="h-4 w-4 shrink-0" />
                   {lead.website_url}
                 </a>
               ) : (
                 <p className="text-sm text-red-500 font-medium">No website detected</p>
               )}
               {lead.hours && (
-                <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 mt-0.5 shrink-0" />
                   {lead.hours}
                 </div>
               )}
               {lead.photo_count != null && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <ImageIcon className="h-3.5 w-3.5" />
                   {lead.photo_count} photo{lead.photo_count === 1 ? '' : 's'} on listing
                 </div>
               )}
               {lead.google_categories.length > 0 && (
-                <div className="flex items-start gap-2 text-xs text-gray-500">
-                  <Building2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Building2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span className="flex flex-wrap gap-1">
                     {lead.google_categories.map((c) => (
-                      <span key={c} className="bg-gray-100 rounded px-1.5 py-0.5">
+                      <span key={c} className="bg-muted rounded px-1.5 py-0.5">
                         {c}
                       </span>
                     ))}
@@ -272,14 +289,14 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
             {lead.business_description && (
               <>
                 <Separator />
-                <p className="text-sm text-gray-600">{lead.business_description}</p>
+                <p className="text-sm text-muted-foreground">{lead.business_description}</p>
               </>
             )}
 
             <Separator />
 
             {/* Web signals */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <Signal label="HTTPS" value={lead.has_ssl} />
               <Signal label="Mobile Friendly" value={lead.has_mobile_viewport} />
               <Signal label="HTTP Status" value={lead.website_status_code} raw />
@@ -315,7 +332,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                 <ul className="space-y-1">
                   {lead.ai_issues.map((issue, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
                       {issue}
                     </li>
                   ))}
@@ -326,10 +343,10 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
             {/* AI summary */}
             {lead.ai_summary && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                   AI Summary
                 </p>
-                <p className="text-sm italic text-gray-600">{lead.ai_summary}</p>
+                <p className="text-sm italic text-muted-foreground">{lead.ai_summary}</p>
               </div>
             )}
 
@@ -366,7 +383,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
             {/* Outreach draft */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Outreach Draft
                 </p>
                 {draft && (
@@ -393,16 +410,52 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                 className="resize-none text-sm"
                 rows={5}
               />
+              <div className="mt-2 space-y-2">
+                <input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Email subject…"
+                />
+                <Button
+                  size="sm"
+                  className="w-full gap-1.5"
+                  onClick={() => sendMutation.mutate()}
+                  disabled={sendMutation.isPending || !lead.email || !draft.trim()}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {sendMutation.isPending ? 'Sending…' : `Send email to ${lead.email ?? 'lead'}`}
+                </Button>
+              </div>
               {draftMutation.isError && (
                 <p className="text-xs text-red-500 mt-1">
                   {(draftMutation.error as Error).message}
+                </p>
+              )}
+              {sendMutation.isError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {(sendMutation.error as Error).message}
+                </p>
+              )}
+              {lead.outreach_last_error && (
+                <p className="text-xs text-amber-600 mt-1">Last send error: {lead.outreach_last_error}</p>
+              )}
+              {lead.outreach_sent_at && (
+                <p className="text-xs text-green-600 mt-1">
+                  Last sent:{' '}
+                  {new Date(lead.outreach_sent_at).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
                 </p>
               )}
             </div>
 
             {/* Status */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                 Status
               </p>
               <Select value={lead.status} onValueChange={handleStatusChange}>
@@ -422,7 +475,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
             {/* Notes */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Notes
                 </p>
                 {savedIndicator && (
@@ -440,7 +493,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
 
             {/* Footer */}
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Found{' '}
                 {new Date(lead.created_at).toLocaleDateString('en-US', {
                   month: 'long',
@@ -460,7 +513,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
               </p>
               <button
                 onClick={handleArchive}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
               >
                 Archive
               </button>
@@ -485,7 +538,7 @@ function CopyButton({
   return (
     <button
       onClick={onClick}
-      className="text-gray-400 hover:text-indigo-600 transition-colors flex-shrink-0"
+      className="text-gray-400 hover:text-indigo-600 transition-colors shrink-0"
       title={active ? 'Copied!' : 'Copy to clipboard'}
     >
       {active ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -503,11 +556,11 @@ function Signal({
   raw?: boolean
 }) {
   let display: string
-  let cls = 'text-gray-600'
+  let cls = 'text-muted-foreground'
 
   if (value === null || value === undefined) {
     display = '—'
-    cls = 'text-gray-400'
+    cls = 'text-muted-foreground'
   } else if (raw) {
     display = String(value)
   } else {
@@ -516,8 +569,8 @@ function Signal({
   }
 
   return (
-    <div className="rounded-lg bg-gray-50 p-2.5">
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+    <div className="rounded-lg bg-muted p-2.5">
+      <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
       <p className={`text-sm font-medium ${cls}`}>{display}</p>
     </div>
   )

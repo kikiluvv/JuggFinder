@@ -73,6 +73,8 @@ class Lead(Base):
 
     # Outreach & workflow
     outreach_draft: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outreach_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    outreach_last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="new")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -89,3 +91,54 @@ class Lead(Base):
 
     def __repr__(self) -> str:
         return f"<Lead id={self.id} name={self.name!r} score={self.lead_score}>"
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"<AppSetting key={self.key!r}>"
+
+
+class OutreachSuppression(Base):
+    __tablename__ = "outreach_suppressions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    def __repr__(self) -> str:
+        return f"<OutreachSuppression id={self.id} email={self.email!r}>"
+
+
+class OutreachSendLog(Base):
+    __tablename__ = "outreach_send_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    to_email: Mapped[str] = mapped_column(Text, nullable=False)
+    subject: Mapped[str] = mapped_column(Text, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)  # sent | blocked | failed
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    message_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<OutreachSendLog id={self.id} to={self.to_email!r} status={self.status!r}>"

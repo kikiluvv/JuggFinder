@@ -16,10 +16,20 @@ from src.api.schemas import (
     LeadSummary,
     LeadUpdate,
     OutreachDraftResponse,
+    OutreachSendRequest,
+    OutreachSendResponse,
     StatsResponse,
 )
-from src.db.models import Lead
+from src.db.models import Lead, OutreachSendLog
 from src.db.session import SessionLocal, get_db
+from src.outreach.email_sender import OutreachEmailError, send_outreach_email
+from src.outreach.guardrails import (
+    count_sends_for_local_day,
+    get_outreach_policy,
+    is_suppressed,
+    normalize_email,
+    within_send_window,
+)
 from src.pipeline import rescan_lead
 from src.scorer.outreach import draft_outreach
 
@@ -339,3 +349,152 @@ async def draft_outreach_endpoint(lead_id: int):
         lead.outreach_draft = draft
         await db.commit()
         return OutreachDraftResponse(lead_id=lead.id, draft=draft)
+
+
+@router.post("/{lead_id}/send-outreach", response_model=OutreachSendResponse)
+async def send_outreach_endpoint(lead_id: int, body: OutreachSendRequest):
+    """
+    Send an outreach email for a lead using configured SMTP credentials.
+    Uses explicit body/subject when provided, otherwise falls back to
+    the saved outreach draft + generated subject.
+    """
+    async with SessionLocal() as db:
+        result = await db.execute(select(Lead).where(Lead.id == lead_id))
+        lead = result.scalar_one_or_none()
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
+
+        if not lead.email:
+            raise HTTPException(status_code=400, detail="Lead has no email address to send to.")
+
+        policy = await get_outreach_policy(db)
+        recipient_email = normalize_email(lead.email)
+
+        if not policy.enabled:
+            raise HTTPException(
+                status_code=400,
+                detail="Outreach sending is disabled in outreach policy settings.",
+            )
+
+        if lead.status not in policy.allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Lead status '{lead.status}' not allowed for send. "
+                    f"Allowed: {', '.join(policy.allowed_statuses)}"
+                ),
+            )
+
+        now = datetime.now(UTC)
+        if policy.enforce_window and not within_send_window(
+            now_utc=now,
+            timezone=policy.send_timezone,
+            start_hhmm=policy.send_window_start,
+            end_hhmm=policy.send_window_end,
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Current time is outside the configured outreach send window "
+                    f"({policy.send_window_start}-{policy.send_window_end} {policy.send_timezone})."
+                ),
+            )
+
+        if policy.enforce_daily_cap:
+            sent_today = await count_sends_for_local_day(
+                db=db,
+                timezone=policy.send_timezone,
+                now_utc=now,
+            )
+            if sent_today >= policy.daily_send_cap:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Daily outreach cap reached ({policy.daily_send_cap}) "
+                        f"for timezone {policy.send_timezone}."
+                    ),
+                )
+
+        if policy.enforce_suppression and await is_suppressed(db, recipient_email):
+            raise HTTPException(
+                status_code=400,
+                detail="Recipient is on suppression list; not sending.",
+            )
+
+        note_text = (lead.notes or "").lower()
+        if "do not contact" in note_text or "unsubscribe" in note_text:
+            db.add(
+                OutreachSendLog(
+                    lead_id=lead.id,
+                    to_email=recipient_email,
+                    subject=body.subject or "",
+                    body=(body.body or lead.outreach_draft or "")[:4000],
+                    status="blocked",
+                    error="do-not-contact in notes",
+                )
+            )
+            await db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail="Lead is marked do-not-contact in notes; not sending.",
+            )
+
+        message_body = (body.body or lead.outreach_draft or "").strip()
+        if not message_body:
+            raise HTTPException(
+                status_code=400,
+                detail="No outreach message body available. Draft one first or provide `body`.",
+            )
+
+        subject = (body.subject or f"Quick website idea for {lead.name}").strip()
+        if not subject:
+            raise HTTPException(status_code=400, detail="Email subject cannot be empty.")
+
+        try:
+            message_id = await send_outreach_email(
+                to_email=recipient_email,
+                subject=subject,
+                body=message_body,
+            )
+        except OutreachEmailError as e:
+            lead.outreach_last_error = str(e)
+            db.add(
+                OutreachSendLog(
+                    lead_id=lead.id,
+                    to_email=recipient_email,
+                    subject=subject,
+                    body=message_body[:4000],
+                    status="failed",
+                    error=str(e),
+                )
+            )
+            await db.commit()
+            raise HTTPException(
+                status_code=502,
+                detail=f"Unable to send outreach email: {e}",
+            ) from e
+
+        sent_at = datetime.now(UTC)
+        lead.outreach_sent_at = sent_at
+        lead.outreach_last_error = None
+        # Persist whichever message body was used so the sent text remains visible/editable.
+        lead.outreach_draft = message_body
+        db.add(
+            OutreachSendLog(
+                lead_id=lead.id,
+                to_email=recipient_email,
+                subject=subject,
+                body=message_body[:4000],
+                status="sent",
+                message_id=message_id,
+                sent_at=sent_at,
+            )
+        )
+        await db.commit()
+
+        return OutreachSendResponse(
+            lead_id=lead.id,
+            to_email=recipient_email,
+            subject=subject,
+            sent_at=sent_at,
+        )

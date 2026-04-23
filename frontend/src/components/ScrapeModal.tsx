@@ -64,14 +64,14 @@ export default function ScrapeModal({ open, onClose }: Props) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Scrape Now</DialogTitle>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Select categories to scrape from Google Maps.
           </p>
         </DialogHeader>
 
         <div className="mt-2 space-y-3 max-h-72 overflow-y-auto pr-1">
           {/* Select all */}
-          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Checkbox
               id="select-all"
               checked={allSelected}

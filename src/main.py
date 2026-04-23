@@ -2,20 +2,20 @@
 
 from contextlib import asynccontextmanager
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes.leads import router as leads_router
 from src.api.routes.scrape import router as scrape_router
+from src.api.routes.settings import router as settings_router
+from src.app_state import scheduler
 from src.config.categories import CATEGORIES
 from src.config.settings import settings
 from src.db.session import ensure_schema
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
-scheduler = AsyncIOScheduler()
 
 
 def _parse_schedule_time(time_str: str) -> tuple[int, int]:
@@ -76,6 +76,7 @@ app.add_middleware(
 
 app.include_router(leads_router)
 app.include_router(scrape_router)
+app.include_router(settings_router)
 
 
 @app.get("/health")

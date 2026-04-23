@@ -1,4 +1,10 @@
-import type { LeadDetail, LeadsResponse, OutreachDraftResponse, StatsResponse } from '@/types'
+import type {
+  LeadDetail,
+  LeadsResponse,
+  OutreachDraftResponse,
+  OutreachSendResponse,
+  StatsResponse,
+} from '@/types'
 
 export interface LeadsParams {
   search?: string
@@ -71,6 +77,17 @@ export async function rescanLead(id: number): Promise<LeadDetail> {
 
 export async function draftOutreach(id: number): Promise<OutreachDraftResponse> {
   return apiRequest<OutreachDraftResponse>(`/leads/${id}/draft-outreach`, { method: 'POST' })
+}
+
+export async function sendOutreach(
+  id: number,
+  data: { subject?: string; body?: string },
+): Promise<OutreachSendResponse> {
+  return apiRequest<OutreachSendResponse>(`/leads/${id}/send-outreach`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
 }
 
 /**

@@ -48,22 +48,22 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-5">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-5">
       {/* Search */}
       <div>
-        <Label className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 block">Search</Label>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">Search</Label>
         <input
           type="text"
           placeholder="Business name or address…"
           value={filters.search}
           onChange={(e) => onChange({ search: e.target.value })}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
       {/* Score range */}
       <div>
-        <Label className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 block">
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">
           Score: {filters.scoreMin}–{filters.scoreMax}
         </Label>
         <Slider
@@ -81,7 +81,7 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
 
       {/* Statuses */}
       <div>
-        <Label className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 block">Status</Label>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">Status</Label>
         <div className="flex flex-wrap gap-3">
           {STATUS_OPTIONS.map(({ value, label }) => (
             <div key={value} className="flex items-center gap-1.5">
@@ -101,7 +101,7 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
               checked={filters.showArchived}
               onCheckedChange={(c) => onChange({ showArchived: !!c })}
             />
-            <label htmlFor="show-archived" className="text-sm cursor-pointer text-gray-400">
+            <label htmlFor="show-archived" className="text-sm cursor-pointer text-muted-foreground">
               Archived
             </label>
           </div>
@@ -110,7 +110,7 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
 
       {/* Has website */}
       <div>
-        <Label className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 block">
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">
           Website
         </Label>
         <Select
@@ -132,7 +132,7 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
       {/* Categories */}
       {categories.length > 0 && (
         <div>
-          <Label className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 block">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">
             Categories
           </Label>
           <div className="flex flex-wrap gap-3">
@@ -170,7 +170,7 @@ export default function FilterBar({ filters, onChange, onReset }: FilterBarProps
             score_max: filters.scoreMax,
             has_website: filters.hasWebsite,
           })}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-indigo-600 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-indigo-600 hover:underline"
           download
         >
           <Download className="h-3.5 w-3.5" />

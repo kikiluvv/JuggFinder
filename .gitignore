@@ -1,0 +1,39 @@
+# Environment & secrets
+.env
+
+# Database
+leads.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# macOS
+.DS_Store
+
+# Editor
+.cursor/
+*.swp
+
+# Cursor
+.cursor/
+docs/
+.cursorrules
+*.md

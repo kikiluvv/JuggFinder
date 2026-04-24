@@ -78,6 +78,15 @@ app.include_router(leads_router)
 app.include_router(scrape_router)
 app.include_router(settings_router)
 
+if settings.dev_pipeline_dry_run_enabled:
+    from src.api.routes.dev_pipeline import router as dev_pipeline_router
+
+    logger.warning(
+        "DEV_PIPELINE_DRY_RUN_ENABLED is true — POST /dev/pipeline-dry-run is mounted. "
+        "Disable before exposing this API to a network."
+    )
+    app.include_router(dev_pipeline_router, prefix="/dev", tags=["dev"])
+
 
 @app.get("/health")
 async def health():

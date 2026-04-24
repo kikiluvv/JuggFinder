@@ -238,4 +238,5 @@ Additional outreach tables (not shown in full above):
 
 **Engagement (Phase 17.1+):**
 - `engagements` — one row per `(lead_id, channel)` (default channel `email`); append-only activity rolls up here.
-- `engagement_events` — `event_type` (e.g. `outreach_sent`, `outreach_blocked`, `outreach_failed`, future `inbound_received`) + JSON `payload` + optional `outreach_send_log_id` link for audit parity with Phase B logs.
+- `engagement_events` — `event_type` (e.g. `outreach_sent`, `outreach_blocked`, `outreach_failed`, `inbound_received`) + JSON `payload` + optional `outreach_send_log_id` link for audit parity with Phase B logs.
+- **Inbound capture:** `POST /leads/{id}/inbound` appends `inbound_received` (manual paste, webhook adapter, or dev tooling).

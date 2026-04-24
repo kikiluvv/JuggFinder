@@ -60,6 +60,7 @@ const EVENT_LABELS: Record<string, string> = {
   outreach_sent: 'Email sent',
   outreach_blocked: 'Send blocked',
   outreach_failed: 'Send failed',
+  inbound_received: 'Inbound email',
 }
 
 function engagementEventLabel(ev: EngagementEventItem): string {

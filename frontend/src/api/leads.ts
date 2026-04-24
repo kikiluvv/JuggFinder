@@ -1,5 +1,7 @@
 import type {
   EngagementTimelineResponse,
+  InboundCaptureRequest,
+  InboundCaptureResponse,
   LeadDetail,
   LeadsResponse,
   OutreachDraftResponse,
@@ -55,6 +57,17 @@ export async function fetchLead(id: number): Promise<LeadDetail> {
 
 export async function fetchLeadEngagement(id: number): Promise<EngagementTimelineResponse> {
   return apiRequest<EngagementTimelineResponse>(`/leads/${id}/engagement`)
+}
+
+export async function postLeadInbound(
+  id: number,
+  data: InboundCaptureRequest,
+): Promise<InboundCaptureResponse> {
+  return apiRequest<InboundCaptureResponse>(`/leads/${id}/inbound`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
 }
 
 export async function updateLead(

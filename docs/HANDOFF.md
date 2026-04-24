@@ -1,6 +1,6 @@
 # Handoff Snapshot
 
-Last updated: 2026-04-23
+Last updated: 2026-04-23 (Phase 17.2 inbound + dev dry-run)
 
 ## Strategic backbone (read first)
 Long-term direction is documented in **`docs/CLIENT_LIFECYCLE_AUTOMATION.md`**: state machine + job queue, unified **engagement** model, build **verify → preview → approve → release**, **commercial gates**, and **observability / kill switches**. Outreach Phases A–I in `docs/OUTREACH_AUTOMATION_ROADMAP.md` align to that blueprint. New work should extend those patterns rather than adding one-off endpoints per feature.
@@ -41,7 +41,7 @@ Long-term direction is documented in **`docs/CLIENT_LIFECYCLE_AUTOMATION.md`**: 
 
 ## Recommended Next Session Focus (Phase 17)
 1. **17.1 (done):** `Engagement` + `EngagementEvent`, dual-write from `send-outreach`, `GET /leads/{id}/engagement`, Activity UI — see `docs/phases/PHASE_17_ENGAGEMENT_AND_INBOUND.md`.
-2. **17.2:** Implement inbound reply **ingestion** (`POST` MVP first; then IMAP or webhook) and **raw persistence** on the engagement timeline.
+2. **17.2 (done):** `POST /leads/{id}/inbound` for manual capture; optional **`POST /dev/pipeline-dry-run`** when `DEV_PIPELINE_DRY_RUN_ENABLED=true` to seed **TEST BUSINESS** and simulate send + inbound without SMTP. Next: IMAP/webhook ingestion (17.x) if desired.
 3. Add AI **intent classification** with **confidence score** (`interested`, `not_now`, `not_interested`, `wrong_contact`, `unsubscribe`).
 4. Route **low-confidence** rows to a **manual review queue**; high-confidence drives suggested next actions only (still overrideable).
 5. Wire minimal **UI**: inbound list, thread view, override labels, link to lead.

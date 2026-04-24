@@ -140,6 +140,32 @@ SMTP_USE_TLS=true
 
 **Guardrails** (daily cap, send window, suppression list, allowed lead statuses) are stored in the database and can be adjusted from the in-app **Settings** UI once the stack is running. Every send attempt is written to an audit log for blocked, failed, and successful outcomes.
 
+### Dev-only: pipeline dry-run (Phase 17.2)
+
+For local testing without wiring IMAP, set in `.env`:
+
+```bash
+DEV_PIPELINE_DRY_RUN_ENABLED=true
+# Optional: DEV_PIPELINE_TEST_BUSINESS_NAME=TEST BUSINESS
+# Optional: DEV_PIPELINE_TEST_EMAIL=1kikiluvv@gmail.com
+```
+
+Restart the API, then:
+
+```bash
+curl -s -X POST http://localhost:8000/dev/pipeline-dry-run \
+  -H "Content-Type: application/json" \
+  -d '{"steps":["seed","draft","simulate_outreach_sent","simulate_inbound"]}'
+```
+
+- **`seed`** upserts the synthetic test lead (`place_id=dev:juggfinder-test-business`).
+- **`draft`** calls real AI (uses your API keys).
+- **`simulate_outreach_sent`** / **`simulate_inbound`** only append timeline events; **no SMTP** and simulated send does **not** create `outreach_send_logs`.
+
+Manual inbound: `POST /leads/{id}/inbound` with JSON `from_email`, `to_email`, `subject`, `body`, optional `message_id`.
+
+**Disable `DEV_PIPELINE_DRY_RUN_ENABLED` before any network-exposed deployment.**
+
 ---
 
 ## Quality checks

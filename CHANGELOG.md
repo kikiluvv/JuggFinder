@@ -7,6 +7,13 @@ Audit findings live in `AUDITS.md`; phase summaries live in `MILESTONES.md`.
 
 ## 2026-04-23
 
+### Phase 17.2 — Inbound capture + dev pipeline dry-run
+
+- `POST /leads/{id}/inbound` with `InboundCaptureRequest` → `inbound_received` timeline event (`record_inbound_received`).
+- Dev-only `POST /dev/pipeline-dry-run` when `DEV_PIPELINE_DRY_RUN_ENABLED=true`: seeds `dev:juggfinder-test-business` lead (**TEST BUSINESS** / configurable email), optional real AI `draft`, simulated `outreach_sent` (no SMTP, no send log), simulated inbound.
+- Settings + `.env.example`: `DEV_PIPELINE_DRY_RUN_ENABLED`, optional `DEV_PIPELINE_TEST_*` overrides.
+- Tests: `tests/test_phase17_2_inbound_and_dry_run.py`; frontend API helper + Activity label for inbound.
+
 ### Phase 17.1 — Engagement backbone
 
 - Added `engagements` and `engagement_events` tables (`Engagement`, `EngagementEvent` models).

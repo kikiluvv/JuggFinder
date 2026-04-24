@@ -7,7 +7,7 @@
 | Milestone | Focus | Status |
 |-----------|--------|--------|
 | **17.1** | `engagements` + `engagement_events`, dual-write from send-outreach, `GET /leads/{id}/engagement`, Activity UI | ✅ Done |
-| **17.2** | `POST /leads/{id}/inbound` (manual / dev capture), timeline shows inbound | Planned |
+| **17.2** | `POST /leads/{id}/inbound` + dev `POST /dev/pipeline-dry-run` (env-guarded), tests for TEST BUSINESS | ✅ Done |
 | **17.3** | LLM classify + confidence, review queue, human override events | Planned |
 
 ---
@@ -51,6 +51,14 @@ Voice agent (roadmap Phase E) slots **after** email + triage + build loop are tr
 ---
 
 ## Phase Notes
+
+### Phase 17.2 — Inbound capture + dev dry-run ✅
+- `POST /leads/{id}/inbound` → `inbound_received` engagement event; body capped at 16k chars; `GET /leads/{id}/engagement` unchanged.
+- `record_inbound_received` in `src/engagement/service.py`.
+- Settings: `dev_pipeline_dry_run_enabled`, `dev_pipeline_test_business_name`, `dev_pipeline_test_email`; `.env.example` documented.
+- `POST /dev/pipeline-dry-run` (mounted only when flag true): steps `seed` | `draft` | `simulate_outreach_sent` | `simulate_inbound` in canonical order; simulated send sets `payload.dry_run=true` and does **not** write `outreach_send_logs`.
+- Frontend: `postLeadInbound` + types; Activity labels `inbound_received`.
+- Tests: `tests/test_phase17_2_inbound_and_dry_run.py` (mini FastAPI apps avoid lifespan / real DB during HTTP tests).
 
 ### Phase 17.1 — Engagement backbone ✅
 - New tables `engagements` (unique `lead_id` + `channel`) and `engagement_events` (append-only `event_type` + JSON `payload`, optional `outreach_send_log_id`).

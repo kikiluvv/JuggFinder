@@ -105,3 +105,16 @@ export interface EngagementTimelineResponse {
   engagement_id: number | null
   events: EngagementEventItem[]
 }
+
+export interface InboundCaptureRequest {
+  from_email: string
+  to_email: string
+  subject?: string
+  body?: string
+  message_id?: string | null
+}
+
+export interface InboundCaptureResponse {
+  lead_id: number
+  event: EngagementEventItem
+}

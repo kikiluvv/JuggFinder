@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.schemas import (
     EngagementEventItem,
     EngagementTimelineResponse,
+    InboundCaptureRequest,
+    InboundCaptureResponse,
     LeadDetail,
     LeadsResponse,
     LeadSummary,
@@ -24,7 +26,7 @@ from src.api.schemas import (
 )
 from src.db.models import Engagement, EngagementEvent, Lead, OutreachSendLog
 from src.db.session import SessionLocal, get_db
-from src.engagement.service import append_engagement_event
+from src.engagement.service import append_engagement_event, record_inbound_received
 from src.outreach.email_sender import OutreachEmailError, send_outreach_email
 from src.outreach.guardrails import (
     count_sends_for_local_day,
@@ -293,6 +295,41 @@ async def get_lead_engagement(lead_id: int, db: AsyncSession = Depends(get_db)):
         channel=eng.channel,
         engagement_id=eng.id,
         events=[EngagementEventItem.model_validate(r) for r in rows],
+    )
+
+
+@router.post(
+    "/{lead_id}/inbound",
+    response_model=InboundCaptureResponse,
+    status_code=201,
+)
+async def post_lead_inbound(
+    lead_id: int,
+    body: InboundCaptureRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Record an inbound email on the engagement timeline (manual paste, webhook, or dev).
+    Phase 17.2 — does not parse threading automatically yet.
+    """
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    ev = await record_inbound_received(
+        db,
+        lead_id=lead_id,
+        from_email=body.from_email,
+        to_email=body.to_email,
+        subject=body.subject,
+        body=body.body,
+        message_id=body.message_id,
+    )
+    await db.commit()
+    await db.refresh(ev)
+    return InboundCaptureResponse(
+        lead_id=lead_id,
+        event=EngagementEventItem.model_validate(ev),
     )
 
 

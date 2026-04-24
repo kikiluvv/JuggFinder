@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Engagement, EngagementEvent
+from src.outreach.guardrails import normalize_email
 
 DEFAULT_CHANNEL = "email"
 
@@ -55,3 +56,33 @@ async def append_engagement_event(
     db.add(event)
     await db.flush()
     return event
+
+
+async def record_inbound_received(
+    db: AsyncSession,
+    *,
+    lead_id: int,
+    from_email: str,
+    to_email: str,
+    subject: str,
+    body: str,
+    message_id: str | None = None,
+    channel: str = DEFAULT_CHANNEL,
+) -> EngagementEvent:
+    """Persist a manual or webhook-captured inbound message on the timeline."""
+    body_stored = (body or "")[:16000]
+    payload: dict[str, str | None] = {
+        "from_email": normalize_email(from_email),
+        "to_email": normalize_email(to_email),
+        "subject": subject.strip(),
+        "body": body_stored,
+    }
+    if message_id:
+        payload["message_id"] = message_id.strip()
+    return await append_engagement_event(
+        db,
+        lead_id=lead_id,
+        event_type="inbound_received",
+        payload=payload,
+        channel=channel,
+    )

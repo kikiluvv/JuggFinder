@@ -19,14 +19,15 @@ Work is split into **milestones** so each merge is shippable.
 
 ---
 
-## Milestone 17.2 — Inbound capture MVP
+## Milestone 17.2 — Inbound capture MVP ✅
 
 | Item | Description |
 |------|-------------|
-| **API** | `POST /leads/{id}/inbound` with `from`, `to`, `subject`, `body`, optional `message_id` — stores `inbound_received` event (dev / manual paste friendly). |
-| **UI** | Optional minimal form or dev-only; timeline shows inbound rows. |
+| **API** | `POST /leads/{id}/inbound` with `from_email`, `to_email`, `subject`, `body`, optional `message_id` — stores `inbound_received` on the engagement timeline (`record_inbound_received`). |
+| **Dev dry-run** | With `DEV_PIPELINE_DRY_RUN_ENABLED=true`, `POST /dev/pipeline-dry-run` seeds/refreshes **TEST BUSINESS** (`place_id=dev:juggfinder-test-business`, email from env default `1kikiluvv@gmail.com`), optional real AI `draft`, **simulated** `outreach_sent` (timeline only, no SMTP / no `outreach_send_logs`), and simulated `inbound_received`. |
+| **Tests** | `tests/test_phase17_2_inbound_and_dry_run.py` — inbound HTTP (mini ASGI app), `execute_dry_run`, mocked draft, `/dev` mini-app. |
 
-**Exit:** A scripted or pasted inbound message appears on the same timeline as outbound.
+**Exit:** Inbound POST + dry-run steps covered by tests; Activity UI shows `inbound_received` (label: “Inbound email”).
 
 ---
 

@@ -137,6 +137,36 @@ class EngagementTimelineResponse(BaseModel):
     events: list[EngagementEventItem]
 
 
+class InboundCaptureRequest(BaseModel):
+    """Manual or dev capture of an inbound email thread message."""
+
+    from_email: str
+    to_email: str
+    subject: str = ""
+    body: str = ""
+    message_id: str | None = None
+
+    @field_validator("from_email", "to_email")
+    @classmethod
+    def strip_emails(cls, v: str) -> str:
+        s = v.strip()
+        if not s:
+            raise ValueError("email must be non-empty")
+        return s
+
+    @field_validator("body")
+    @classmethod
+    def cap_body(cls, v: str) -> str:
+        if len(v) > 16000:
+            return v[:16000]
+        return v
+
+
+class InboundCaptureResponse(BaseModel):
+    lead_id: int
+    event: EngagementEventItem
+
+
 class SettingsResponse(BaseModel):
     # Keys are never returned (only "is set" flags)
     gemini_api_key_set: bool

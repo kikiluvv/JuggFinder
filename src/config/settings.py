@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_use_tls: bool = True
 
+    # --- Dev-only pipeline dry-run (Phase 17.2) — never enable on a public server ---
+    # When true, mounts POST /dev/pipeline-dry-run to seed TEST BUSINESS and simulate steps
+    # without sending real SMTP (simulated send is timeline-only).
+    dev_pipeline_dry_run_enabled: bool = False
+    dev_pipeline_test_business_name: str = "TEST BUSINESS"
+    dev_pipeline_test_email: str = "1kikiluvv@gmail.com"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @field_validator("gemini_api_key", "groq_api_key")

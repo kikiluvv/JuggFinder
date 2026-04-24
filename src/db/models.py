@@ -2,7 +2,17 @@ import json
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, Text, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
@@ -142,3 +152,53 @@ class OutreachSendLog(Base):
 
     def __repr__(self) -> str:
         return f"<OutreachSendLog id={self.id} to={self.to_email!r} status={self.status!r}>"
+
+
+class Engagement(Base):
+    """One conversation thread per lead + channel (e.g. email)."""
+
+    __tablename__ = "engagements"
+    __table_args__ = (UniqueConstraint("lead_id", "channel", name="uq_engagements_lead_channel"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    lead_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("leads.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    channel: Mapped[str] = mapped_column(Text, nullable=False, default="email")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"<Engagement id={self.id} lead_id={self.lead_id} channel={self.channel!r}>"
+
+
+class EngagementEvent(Base):
+    """Append-only timeline row for an engagement."""
+
+    __tablename__ = "engagement_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    engagement_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("engagements.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    outreach_send_log_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    def __repr__(self) -> str:
+        return f"<EngagementEvent id={self.id} type={self.event_type!r}>"

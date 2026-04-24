@@ -7,6 +7,14 @@ Audit findings live in `AUDITS.md`; phase summaries live in `MILESTONES.md`.
 
 ## 2026-04-23
 
+### Phase 17.1 — Engagement backbone
+
+- Added `engagements` and `engagement_events` tables (`Engagement`, `EngagementEvent` models).
+- `POST /leads/{id}/send-outreach` appends timeline events (`outreach_sent`, `outreach_blocked`, `outreach_failed`) alongside `outreach_send_logs`.
+- Added `GET /leads/{id}/engagement` for ordered activity timeline.
+- Dashboard lead detail: **Activity** section powered by the new endpoint.
+- Docs: `docs/phases/PHASE_17_ENGAGEMENT_AND_INBOUND.md`, phase index + milestones milestone table; `docs/INTEGRATION.md` schema note.
+
 ### Documentation — client lifecycle automation (north star)
 
 - Added `docs/CLIENT_LIFECYCLE_AUTOMATION.md`: target **state machine**, **job queue**, **engagement model**, **build → verify → preview → release**, **commercial gates**, **observability/kill switches**, and recommended **implementation sequencing**.

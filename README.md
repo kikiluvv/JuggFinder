@@ -42,6 +42,7 @@ jugg-finder/
 │   ├── scraper/             # Maps scraping + site evaluation
 │   ├── scorer/              # Lead scoring, AI integration, outreach drafting
 │   ├── outreach/            # SMTP sender + guardrail/policy helpers
+│   ├── engagement/          # Lead engagement thread + timeline events (Phase 17+)
 │   └── utils/               # Logging, .env persistence helpers, etc.
 ├── frontend/                # Vite + React + TypeScript dashboard (Tailwind, shadcn/ui)
 ├── tests/                   # pytest suite

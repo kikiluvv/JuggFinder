@@ -40,8 +40,8 @@ Long-term direction is documented in **`docs/CLIENT_LIFECYCLE_AUTOMATION.md`**: 
 - `smtp.google.com` may resolve but can fail TCP connect in some environments.
 
 ## Recommended Next Session Focus (Phase 17)
-1. Sketch **`Engagement` / `EngagementEvent`** (or equivalent) so email outbound (`outreach_send_logs`) and future inbound share one model — avoids a second triage-specific schema that must be merged later.
-2. Implement inbound reply **ingestion** (IMAP or webhook) and **raw persistence** (MIME/storage path + metadata).
+1. **17.1 (done):** `Engagement` + `EngagementEvent`, dual-write from `send-outreach`, `GET /leads/{id}/engagement`, Activity UI — see `docs/phases/PHASE_17_ENGAGEMENT_AND_INBOUND.md`.
+2. **17.2:** Implement inbound reply **ingestion** (`POST` MVP first; then IMAP or webhook) and **raw persistence** on the engagement timeline.
 3. Add AI **intent classification** with **confidence score** (`interested`, `not_now`, `not_interested`, `wrong_contact`, `unsubscribe`).
 4. Route **low-confidence** rows to a **manual review queue**; high-confidence drives suggested next actions only (still overrideable).
 5. Wire minimal **UI**: inbound list, thread view, override labels, link to lead.

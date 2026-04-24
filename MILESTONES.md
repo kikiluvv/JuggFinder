@@ -1,6 +1,14 @@
 # JuggFinder — Milestones
 
-## Current Phase: 17 — Inbound AI Reply Triage 🔄
+## Current Phase: 17 — Engagement & Inbound Triage 🔄
+
+**Milestone tracking:** [`docs/phases/PHASE_17_ENGAGEMENT_AND_INBOUND.md`](docs/phases/PHASE_17_ENGAGEMENT_AND_INBOUND.md)
+
+| Milestone | Focus | Status |
+|-----------|--------|--------|
+| **17.1** | `engagements` + `engagement_events`, dual-write from send-outreach, `GET /leads/{id}/engagement`, Activity UI | ✅ Done |
+| **17.2** | `POST /leads/{id}/inbound` (manual / dev capture), timeline shows inbound | Planned |
+| **17.3** | LLM classify + confidence, review queue, human override events | Planned |
 
 ---
 
@@ -22,7 +30,7 @@
 | 14 — End-to-End Integration | ✅ Done | 2026-04-21 |
 | 15 — Scraping & Scoring Hardening | ✅ Done | 2026-04-21 |
 | 16 — Outreach Phase B Guardrails | ✅ Done | 2026-04-23 |
-| 17 — Inbound AI Reply Triage | 🔄 In Progress | — |
+| 17 — Engagement & Inbound Triage | 🔄 In Progress | — |
 
 ---
 
@@ -33,7 +41,7 @@ Aligned with `docs/CLIENT_LIFECYCLE_AUTOMATION.md` and outreach Phases F–I. Da
 | Phase | Name | Objective |
 |------|------|-------------|
 | 18 | Workflow backbone | Explicit `WorkflowRun` / `WorkflowEvent` (or equivalent), idempotent jobs, stuck/dead-letter visibility in UI |
-| 19 | Engagement unification | `Engagement` + `EngagementEvent` spanning email + logs; migrate/bridge `outreach_send_logs` |
+| 19 | Engagement unification | Deepen `Engagement`/`EngagementEvent` (started in 17.1); optional consolidation vs `outreach_send_logs` only |
 | 20 | Conversation + build handoff | Cooldown/max-touch rules; structured **scope** capture from triage + client form |
 | 21 | Verify + preview | Generator → CI/link/a11y checks → ephemeral preview URL; no prod DNS |
 | 22 | Commercial + release gate | Logged approval + payment/deposit before promote; handoff package |
@@ -43,6 +51,14 @@ Voice agent (roadmap Phase E) slots **after** email + triage + build loop are tr
 ---
 
 ## Phase Notes
+
+### Phase 17.1 — Engagement backbone ✅
+- New tables `engagements` (unique `lead_id` + `channel`) and `engagement_events` (append-only `event_type` + JSON `payload`, optional `outreach_send_log_id`).
+- `src/engagement/service.py` — `get_or_create_engagement`, `append_engagement_event`.
+- `POST /leads/{id}/send-outreach` dual-writes `outreach_sent`, `outreach_blocked`, and `outreach_failed` timeline events after each corresponding `outreach_send_logs` row (with `flush` for stable FK ids).
+- `GET /leads/{id}/engagement` returns newest-first timeline (404 if lead missing).
+- Lead detail sheet **Activity** block + `fetchLeadEngagement`; send success invalidates engagement query.
+- Tests: `tests/test_engagement.py`.
 
 ### Phase 16 — Outreach Phase B Guardrails ✅
 - Added DB-backed outreach policy (`app_settings`) with configurable controls: enabled switch, daily cap, send window/timezone, suppression toggle, allowed lead statuses.

@@ -11,6 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas import (
+    EngagementEventItem,
+    EngagementTimelineResponse,
     LeadDetail,
     LeadsResponse,
     LeadSummary,
@@ -20,8 +22,9 @@ from src.api.schemas import (
     OutreachSendResponse,
     StatsResponse,
 )
-from src.db.models import Lead, OutreachSendLog
+from src.db.models import Engagement, EngagementEvent, Lead, OutreachSendLog
 from src.db.session import SessionLocal, get_db
+from src.engagement.service import append_engagement_event
 from src.outreach.email_sender import OutreachEmailError, send_outreach_email
 from src.outreach.guardrails import (
     count_sends_for_local_day,
@@ -260,6 +263,39 @@ async def export_leads_csv(
     )
 
 
+@router.get("/{lead_id}/engagement", response_model=EngagementTimelineResponse)
+async def get_lead_engagement(lead_id: int, db: AsyncSession = Depends(get_db)):
+    """Ordered activity timeline (newest first) for the lead's default email engagement."""
+    lead_check = await db.execute(select(Lead.id).where(Lead.id == lead_id))
+    if lead_check.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    eng_result = await db.execute(
+        select(Engagement).where(Engagement.lead_id == lead_id, Engagement.channel == "email")
+    )
+    eng = eng_result.scalar_one_or_none()
+    if not eng:
+        return EngagementTimelineResponse(
+            lead_id=lead_id,
+            channel="email",
+            engagement_id=None,
+            events=[],
+        )
+
+    ev_result = await db.execute(
+        select(EngagementEvent)
+        .where(EngagementEvent.engagement_id == eng.id)
+        .order_by(EngagementEvent.created_at.desc())
+    )
+    rows = ev_result.scalars().all()
+    return EngagementTimelineResponse(
+        lead_id=lead_id,
+        channel=eng.channel,
+        engagement_id=eng.id,
+        events=[EngagementEventItem.model_validate(r) for r in rows],
+    )
+
+
 @router.get("/{lead_id}", response_model=LeadDetail)
 async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
@@ -423,15 +459,26 @@ async def send_outreach_endpoint(lead_id: int, body: OutreachSendRequest):
 
         note_text = (lead.notes or "").lower()
         if "do not contact" in note_text or "unsubscribe" in note_text:
-            db.add(
-                OutreachSendLog(
-                    lead_id=lead.id,
-                    to_email=recipient_email,
-                    subject=body.subject or "",
-                    body=(body.body or lead.outreach_draft or "")[:4000],
-                    status="blocked",
-                    error="do-not-contact in notes",
-                )
+            block_log = OutreachSendLog(
+                lead_id=lead.id,
+                to_email=recipient_email,
+                subject=body.subject or "",
+                body=(body.body or lead.outreach_draft or "")[:4000],
+                status="blocked",
+                error="do-not-contact in notes",
+            )
+            db.add(block_log)
+            await db.flush()
+            await append_engagement_event(
+                db,
+                lead_id=lead.id,
+                event_type="outreach_blocked",
+                payload={
+                    "to_email": recipient_email,
+                    "subject": body.subject or "",
+                    "reason": "do-not-contact in notes",
+                },
+                outreach_send_log_id=block_log.id,
             )
             await db.commit()
             raise HTTPException(
@@ -458,15 +505,26 @@ async def send_outreach_endpoint(lead_id: int, body: OutreachSendRequest):
             )
         except OutreachEmailError as e:
             lead.outreach_last_error = str(e)
-            db.add(
-                OutreachSendLog(
-                    lead_id=lead.id,
-                    to_email=recipient_email,
-                    subject=subject,
-                    body=message_body[:4000],
-                    status="failed",
-                    error=str(e),
-                )
+            fail_log = OutreachSendLog(
+                lead_id=lead.id,
+                to_email=recipient_email,
+                subject=subject,
+                body=message_body[:4000],
+                status="failed",
+                error=str(e),
+            )
+            db.add(fail_log)
+            await db.flush()
+            await append_engagement_event(
+                db,
+                lead_id=lead.id,
+                event_type="outreach_failed",
+                payload={
+                    "to_email": recipient_email,
+                    "subject": subject,
+                    "error": str(e),
+                },
+                outreach_send_log_id=fail_log.id,
             )
             await db.commit()
             raise HTTPException(
@@ -479,16 +537,28 @@ async def send_outreach_endpoint(lead_id: int, body: OutreachSendRequest):
         lead.outreach_last_error = None
         # Persist whichever message body was used so the sent text remains visible/editable.
         lead.outreach_draft = message_body
-        db.add(
-            OutreachSendLog(
-                lead_id=lead.id,
-                to_email=recipient_email,
-                subject=subject,
-                body=message_body[:4000],
-                status="sent",
-                message_id=message_id,
-                sent_at=sent_at,
-            )
+        sent_log = OutreachSendLog(
+            lead_id=lead.id,
+            to_email=recipient_email,
+            subject=subject,
+            body=message_body[:4000],
+            status="sent",
+            message_id=message_id,
+            sent_at=sent_at,
+        )
+        db.add(sent_log)
+        await db.flush()
+        await append_engagement_event(
+            db,
+            lead_id=lead.id,
+            event_type="outreach_sent",
+            payload={
+                "to_email": recipient_email,
+                "subject": subject,
+                "message_id": message_id,
+                "snippet": message_body[:240],
+            },
+            outreach_send_log_id=sent_log.id,
         )
         await db.commit()
 

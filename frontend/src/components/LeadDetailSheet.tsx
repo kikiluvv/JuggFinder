@@ -1,4 +1,11 @@
-import { draftOutreach, fetchLead, rescanLead, sendOutreach, updateLead } from '@/api/leads'
+import {
+  draftOutreach,
+  fetchLead,
+  fetchLeadEngagement,
+  rescanLead,
+  sendOutreach,
+  updateLead,
+} from '@/api/leads'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,7 +35,7 @@ import {
   Star,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { LeadDetail, LeadStatus } from '@/types'
+import type { EngagementEventItem, LeadDetail, LeadStatus } from '@/types'
 
 const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -47,6 +54,25 @@ function scoreClass(score: number) {
   if (score >= 8) return SCORE_CLASS.high
   if (score >= 5) return SCORE_CLASS.mid
   return SCORE_CLASS.low
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  outreach_sent: 'Email sent',
+  outreach_blocked: 'Send blocked',
+  outreach_failed: 'Send failed',
+}
+
+function engagementEventLabel(ev: EngagementEventItem): string {
+  return EVENT_LABELS[ev.event_type] ?? ev.event_type.replace(/_/g, ' ')
+}
+
+function engagementEventDetail(ev: EngagementEventItem): string {
+  const p = ev.payload
+  if (!p || typeof p !== 'object') return ''
+  if (typeof p.subject === 'string' && p.subject) return p.subject
+  if (typeof p.reason === 'string') return p.reason
+  if (typeof p.error === 'string') return p.error
+  return ''
 }
 
 interface Props {
@@ -68,6 +94,12 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
   const { data: lead, isLoading } = useQuery({
     queryKey: ['lead', leadId],
     queryFn: () => fetchLead(leadId!),
+    enabled: !!leadId,
+  })
+
+  const { data: engagementTimeline } = useQuery({
+    queryKey: ['lead-engagement', leadId],
+    queryFn: () => fetchLeadEngagement(leadId!),
     enabled: !!leadId,
   })
 
@@ -115,6 +147,7 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
     mutationFn: () => sendOutreach(lead!.id, { subject, body: draft }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
+      queryClient.invalidateQueries({ queryKey: ['lead-engagement', leadId] })
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       setSavedIndicator(true)
       setTimeout(() => setSavedIndicator(false), 2000)
@@ -376,6 +409,43 @@ export default function LeadDetailSheet({ leadId, onClose }: Props) {
                     ? 'Regenerate draft'
                     : 'AI draft outreach'}
               </Button>
+            </div>
+
+            <Separator />
+
+            {/* Activity timeline (Phase 17.1) */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Activity
+              </p>
+              {!engagementTimeline?.events?.length ? (
+                <p className="text-xs text-muted-foreground rounded-lg border border-dashed border-border px-3 py-2">
+                  No activity yet. Send an email or run outreach to see the timeline here.
+                </p>
+              ) : (
+                <ul className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y text-sm">
+                  {engagementTimeline.events.map((ev) => (
+                    <li key={ev.id} className="px-3 py-2 flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-foreground">{engagementEventLabel(ev)}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                          {new Date(ev.created_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      {engagementEventDetail(ev) && (
+                        <span className="text-xs text-muted-foreground line-clamp-2">
+                          {engagementEventDetail(ev)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <Separator />

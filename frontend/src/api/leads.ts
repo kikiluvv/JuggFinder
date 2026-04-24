@@ -1,4 +1,5 @@
 import type {
+  EngagementTimelineResponse,
   LeadDetail,
   LeadsResponse,
   OutreachDraftResponse,
@@ -50,6 +51,10 @@ export async function fetchLeads(params: LeadsParams = {}): Promise<LeadsRespons
 
 export async function fetchLead(id: number): Promise<LeadDetail> {
   return apiRequest<LeadDetail>(`/leads/${id}`)
+}
+
+export async function fetchLeadEngagement(id: number): Promise<EngagementTimelineResponse> {
+  return apiRequest<EngagementTimelineResponse>(`/leads/${id}/engagement`)
 }
 
 export async function updateLead(

@@ -120,6 +120,23 @@ class OutreachSendResponse(BaseModel):
     sent_at: datetime
 
 
+class EngagementEventItem(BaseModel):
+    id: int
+    event_type: str
+    payload: dict | None
+    outreach_send_log_id: int | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EngagementTimelineResponse(BaseModel):
+    lead_id: int
+    channel: str
+    engagement_id: int | None
+    events: list[EngagementEventItem]
+
+
 class SettingsResponse(BaseModel):
     # Keys are never returned (only "is set" flags)
     gemini_api_key_set: bool

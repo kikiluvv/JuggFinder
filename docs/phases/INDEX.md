@@ -22,6 +22,9 @@ Build order is strictly sequential. Each phase must be complete and verified bef
 | [12](./PHASE_12_FRONTEND_CORE.md) | Frontend Core Components | Stats bar, lead table, filters, search |
 | [13](./PHASE_13_FRONTEND_PANELS.md) | Frontend Panels & Modals | Side drawer detail, Scrape Now modal |
 | [14](./PHASE_14_INTEGRATION.md) | End-to-End Integration | Run full pipeline, verify data in dashboard |
+| [15](../MILESTONES.md) | Scraping & Scoring Hardening | See `MILESTONES.md` — opportunity score, stealth, outreach draft |
+| [16](../MILESTONES.md) | Outreach Phase B Guardrails | See `MILESTONES.md` — policy, suppressions, send logs |
+| [17](./PHASE_17_ENGAGEMENT_AND_INBOUND.md) | Engagement & Inbound Triage | Thread + events; inbound API; AI classification + review queue |
 
 ---
 

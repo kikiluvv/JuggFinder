@@ -90,3 +90,18 @@ export interface OutreachSendResponse {
   subject: string
   sent_at: string
 }
+
+export interface EngagementEventItem {
+  id: number
+  event_type: string
+  payload: Record<string, unknown> | null
+  outreach_send_log_id: number | null
+  created_at: string
+}
+
+export interface EngagementTimelineResponse {
+  lead_id: number
+  channel: string
+  engagement_id: number | null
+  events: EngagementEventItem[]
+}

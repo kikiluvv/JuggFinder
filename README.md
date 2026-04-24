@@ -153,11 +153,18 @@ uv run pytest
 
 ## Roadmap / future direction
 
-Near-term themes (aligned with the project goals):
+The long-term aim is a **fully orchestrated client lifecycle** (as little hands-on work as is safe): discover → qualify → contact → parse replies → (optional) voice qualification → **scope → build → verify → preview → approve → deliver**, with **hard gates** for money, legal scope, and production infrastructure.
 
-1. **Inbound AI reply triage** — classify replies, surface “interested / not now / unsubscribe / wrong contact,” and queue follow-ups.
-2. **Conversation orchestration** — suggested next messages and lightweight task workflow.
-3. **Voice agent (longer horizon)** — guarded first-touch calling with explicit human handoff.
+**Architecture themes** (full blueprint: [`docs/CLIENT_LIFECYCLE_AUTOMATION.md`](docs/CLIENT_LIFECYCLE_AUTOMATION.md)):
+
+1. **State machine + job queue** — stages and **idempotent** jobs (send, classify, generate, deploy) with retries, timeouts, and visible failures — not only synchronous HTTP handlers.
+2. **Unified engagement model** — one **thread** per relationship with append-only **events** (outbound, inbound raw, classifications, transcripts, human overrides) across email and future channels.
+3. **Confidence-gated AI** — triage and follow-up automation route **low-confidence** results to a **manual review queue**; high-confidence suggestions remain overrideable.
+4. **Build pipeline** — structured spec → generated repo/artifact → **automated verification** (tests, scans, budgets) → **ephemeral preview URL** → **logged approval** → promotion (no surprise DNS changes).
+5. **Commercial checkpoint** — lightweight terms + **payment/deposit** on the path to production or final handoff, so automation optimizes for revenue and boundaries, not just “shipping.”
+6. **Observability + kill switches** — dashboards (volume, block reasons, time-in-stage, override rates) and a **global pause** that stops outbound, calls, and deploys without corrupting data.
+
+**Near-term delivery order:** inbound triage (Phase 17) → workflow backbone → engagement unification → conversation rules → verify/preview → commercial gate → voice last (failures are costliest on the phone).
 
 Principles stay the same: **local-first**, **human-overridable**, **rate-limited and traceable** automation — warm and useful, not spammy.
 

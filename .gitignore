@@ -34,9 +34,12 @@ frontend/.vite/
 
 # Cursor
 .cursor/
-docs/
 .cursorrules
-# Markdown: only the repo-root README is tracked; keep dev notes local
+# Markdown: track public/handoff docs; keep local-only dev notes out of git
 *.md
 !/README.md
+!/CHANGELOG.md
+!/AUDITS.md
+!/MILESTONES.md
+!docs/**/*.md
 /DEV-README.md
